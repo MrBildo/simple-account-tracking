@@ -117,7 +117,12 @@ export function AccountForm(props: {
         setPasswordError('Unlock the vault before saving a password.')
         return
       }
-      updates.passwordEnc = await encryptString(passwordPlain, vaultPassword)
+      try {
+        updates.passwordEnc = await encryptString(passwordPlain, vaultPassword)
+      } catch {
+        setPasswordError('Unable to encrypt with current vault password.')
+        return
+      }
     }
 
     await props.onSave(updates)
