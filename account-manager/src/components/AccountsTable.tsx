@@ -9,7 +9,7 @@ import {
 } from '@mui/material'
 import { Link as RouterLink } from 'react-router-dom'
 import type { AccountRecord } from '../lib/types'
-import { estimateMinPayment, formatMoney, openDateAgeLabel, payoffEstimate } from '../lib/math'
+import { availableCredit, estimateMinPayment, formatMoney, payoffEstimate } from '../lib/math'
 
 export function AccountsTable(props: { accounts: AccountRecord[] }) {
   return (
@@ -20,7 +20,7 @@ export function AccountsTable(props: { accounts: AccountRecord[] }) {
           <TableCell>Type</TableCell>
           <TableCell align="right">Balance</TableCell>
           <TableCell align="right">Min payment</TableCell>
-          <TableCell>Age</TableCell>
+          <TableCell align="right">Available / Limit</TableCell>
           <TableCell>Payoff</TableCell>
         </TableRow>
       </TableHead>
@@ -32,6 +32,7 @@ export function AccountsTable(props: { accounts: AccountRecord[] }) {
             aprPercent: a.interestRateApr,
             monthlyPayment: payment,
           })
+          const avail = availableCredit(a)
           const payoffLabel =
             payoff.kind === 'estimate'
               ? `${payoff.months} mo`
@@ -74,7 +75,20 @@ export function AccountsTable(props: { accounts: AccountRecord[] }) {
                   </>
                 )}
               </TableCell>
-              <TableCell>{openDateAgeLabel(a.openDate) ?? '—'}</TableCell>
+              <TableCell align="right">
+                {a.creditLimit != null ? (
+                  <>
+                    <Typography variant="body2" fontWeight={800}>
+                      {formatMoney(avail ?? 0)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      / {formatMoney(a.creditLimit)}
+                    </Typography>
+                  </>
+                ) : (
+                  '—'
+                )}
+              </TableCell>
               <TableCell>
                 <Typography variant="body2">{payoffLabel}</Typography>
                 {payoff.kind === 'estimate' ? (

@@ -24,6 +24,7 @@ export type AccountRecord = {
   type: AccountType
   accountNumber: string
   currentCardNumber?: string
+  creditLimit?: number
   openDate?: string // ISO date (YYYY-MM-DD)
   interestRateApr?: number // percent (e.g. 24.99)
   serviceFeeAmount?: number

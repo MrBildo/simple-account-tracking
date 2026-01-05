@@ -91,6 +91,7 @@ function AccountDetailInner(props: { id: string }) {
                   accountNumber: updates.accountNumber ?? '',
                   currentBalance: updates.currentBalance ?? 0,
                   currentCardNumber: updates.currentCardNumber,
+                  creditLimit: updates.creditLimit,
                   openDate: updates.openDate,
                   interestRateApr: updates.interestRateApr,
                   serviceFeeAmount: updates.serviceFeeAmount,

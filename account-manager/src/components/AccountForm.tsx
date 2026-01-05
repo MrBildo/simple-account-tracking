@@ -19,8 +19,9 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import { useMemo, useState } from 'react'
 import type { AccountRecord, AccountType } from '../lib/types'
 import type { AccountDraft } from '../lib/accountDraft'
+import { parseCreditCardNumber } from '../lib/card'
 import { decryptString, encryptString } from '../lib/crypto'
-import { estimateMinPayment, formatMoney, openDateAgeLabel, payoffEstimate } from '../lib/math'
+import { availableCredit, estimateMinPayment, formatMoney, openDateAgeLabel, payoffEstimate } from '../lib/math'
 import { useAppStore } from '../store/useAppStore'
 
 const ACCOUNT_TYPES: AccountType[] = [
@@ -55,6 +56,11 @@ export function AccountForm(props: {
   const [passwordError, setPasswordError] = useState<string | null>(null)
 
   const balanceNum = toNumberOrUndefined(props.draft.currentBalance) ?? 0
+  const creditLimitNum = toNumberOrUndefined(props.draft.creditLimit)
+  const availCredit = useMemo(() => {
+    if (creditLimitNum == null) return undefined
+    return availableCredit({ creditLimit: creditLimitNum, currentBalance: balanceNum })
+  }, [balanceNum, creditLimitNum])
   const aprNum = toNumberOrUndefined(props.draft.interestRateApr)
   const actualMinNum = toNumberOrUndefined(props.draft.actualLastMinPayment)
   const estimatedMin = estimateMinPayment(balanceNum)
@@ -71,6 +77,7 @@ export function AccountForm(props: {
   )
 
   const ageLabel = openDateAgeLabel(props.draft.openDate)
+  const cardParsed = useMemo(() => parseCreditCardNumber(props.draft.currentCardNumber), [props.draft.currentCardNumber])
 
   async function revealExistingPassword() {
     if (!props.existing?.passwordEnc) return
@@ -98,6 +105,7 @@ export function AccountForm(props: {
       type: props.draft.type,
       accountNumber: props.draft.accountNumber.trim(),
       currentCardNumber: props.draft.currentCardNumber.trim() || undefined,
+      creditLimit: toNumberOrUndefined(props.draft.creditLimit),
       openDate: props.draft.openDate.trim() || undefined,
       interestRateApr: toNumberOrUndefined(props.draft.interestRateApr),
       serviceFeeAmount: toNumberOrUndefined(props.draft.serviceFeeAmount),
@@ -194,11 +202,66 @@ export function AccountForm(props: {
                   label="Current Card Number"
                   value={props.draft.currentCardNumber}
                   onChange={(e) => props.onDraftChange({ ...props.draft, currentCardNumber: e.target.value })}
+                  onBlur={() => {
+                    if (!cardParsed) return
+                    if (props.draft.currentCardNumber !== cardParsed.formatted) {
+                      props.onDraftChange({ ...props.draft, currentCardNumber: cardParsed.formatted })
+                    }
+                  }}
                   fullWidth
                   inputMode="numeric"
                   autoComplete="cc-number"
+                  placeholder="(optional)"
+                  helperText={cardParsed ? `Detected: ${cardParsed.brand}` : ' '}
+                  InputProps={{
+                    startAdornment: cardParsed ? (
+                      <InputAdornment position="start">
+                        <Box
+                          component="span"
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: 22,
+                            px: 1,
+                            borderRadius: 999,
+                            fontSize: 12,
+                            fontWeight: 800,
+                            letterSpacing: 0.2,
+                            color: 'text.primary',
+                            backgroundColor: 'action.hover',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {cardParsed.brand === 'American Express' ? 'AMEX' : cardParsed.brand.toUpperCase()}
+                        </Box>
+                      </InputAdornment>
+                    ) : undefined,
+                  }}
                 />
               </Grid>
+
+              {props.draft.type === 'Credit Card' ? (
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Credit Limit"
+                    value={props.draft.creditLimit}
+                    onChange={(e) => props.onDraftChange({ ...props.draft, creditLimit: e.target.value })}
+                    fullWidth
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="(optional)"
+                    InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                    helperText={
+                      creditLimitNum != null
+                        ? `Available credit: ${formatMoney(availCredit ?? 0)}`
+                        : 'Optional. Used to calculate available credit.'
+                    }
+                  />
+                </Grid>
+              ) : null}
 
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
@@ -316,6 +379,7 @@ export function AccountForm(props: {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   placeholder={props.existing?.passwordEnc ? 'Stored (encrypted). Type to replace…' : 'Type to store…'}
+                  InputLabelProps={{ shrink: true }}
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">

@@ -79,3 +79,8 @@ export function effectiveMonthlyServiceFee(account: AccountRecord): number {
   return freq === 'Yearly' ? account.serviceFeeAmount / 12 : account.serviceFeeAmount
 }
 
+export function availableCredit(account: Pick<AccountRecord, 'creditLimit' | 'currentBalance'>): number | undefined {
+  if (account.creditLimit == null) return undefined
+  return account.creditLimit - (account.currentBalance || 0)
+}
+
