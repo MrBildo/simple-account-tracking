@@ -12,7 +12,7 @@ export function VaultBar() {
   const isUnlocked = vault.status === 'unlocked'
 
   return (
-    <Stack direction="row" spacing={1} alignItems="center">
+    <Stack direction="row" spacing={1} alignItems="flex-start">
       {isUnlocked ? (
         <>
           <Chip

@@ -34,6 +34,7 @@ function sanitizeAccount(raw: unknown): AccountRecord | null {
     accountNumber,
     currentBalance,
     currentCardNumber: asString(raw.currentCardNumber),
+    creditLimit: asNumber(raw.creditLimit),
     openDate: asString(raw.openDate),
     interestRateApr: asNumber(raw.interestRateApr),
     serviceFeeAmount: asNumber(raw.serviceFeeAmount),

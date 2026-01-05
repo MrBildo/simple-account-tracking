@@ -5,6 +5,7 @@ export type AccountDraft = {
   type: AccountType
   accountNumber: string
   currentCardNumber: string
+  creditLimit: string
   openDate: string
   interestRateApr: string
   serviceFeeAmount: string
@@ -22,6 +23,7 @@ export function buildDraftFromAccount(a: AccountRecord): AccountDraft {
     type: a.type ?? 'Credit Card',
     accountNumber: a.accountNumber ?? '',
     currentCardNumber: a.currentCardNumber ?? '',
+    creditLimit: a.creditLimit?.toString() ?? '',
     openDate: a.openDate ?? '',
     interestRateApr: a.interestRateApr?.toString() ?? '',
     serviceFeeAmount: a.serviceFeeAmount?.toString() ?? '',
@@ -40,6 +42,7 @@ export function buildEmptyDraft(): AccountDraft {
     type: 'Credit Card',
     accountNumber: '',
     currentCardNumber: '',
+    creditLimit: '',
     openDate: '',
     interestRateApr: '',
     serviceFeeAmount: '',
