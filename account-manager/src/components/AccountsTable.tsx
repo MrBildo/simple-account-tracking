@@ -5,27 +5,94 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   Typography,
 } from '@mui/material'
+import { useMemo, useState } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 import type { AccountRecord } from '../lib/types'
 import { availableCredit, estimateMinPayment, formatMoney, payoffEstimate } from '../lib/math'
 
 export function AccountsTable(props: { accounts: AccountRecord[] }) {
+  type SortKey = 'account' | 'balance' | 'minPayment'
+  type SortOrder = 'asc' | 'desc'
+
+  const [orderBy, setOrderBy] = useState<SortKey>('account')
+  const [order, setOrder] = useState<SortOrder>('asc')
+
+  function toggleSort(nextKey: SortKey) {
+    if (orderBy === nextKey) {
+      setOrder((o) => (o === 'asc' ? 'desc' : 'asc'))
+      return
+    }
+    setOrderBy(nextKey)
+    setOrder('asc')
+  }
+
+  const sorted = useMemo(() => {
+    const dir = order === 'asc' ? 1 : -1
+    const list = [...props.accounts]
+
+    function minPayment(a: AccountRecord) {
+      return a.actualLastMinPayment ?? estimateMinPayment(a.currentBalance || 0)
+    }
+
+    list.sort((a, b) => {
+      let cmp = 0
+      if (orderBy === 'account') {
+        cmp = a.accountName.localeCompare(b.accountName, undefined, { sensitivity: 'base' })
+      } else if (orderBy === 'balance') {
+        cmp = (a.currentBalance || 0) - (b.currentBalance || 0)
+      } else {
+        cmp = minPayment(a) - minPayment(b)
+      }
+
+      if (cmp !== 0) return cmp * dir
+      // Tie-breaker: stable-ish and predictable
+      return a.accountName.localeCompare(b.accountName, undefined, { sensitivity: 'base' })
+    })
+
+    return list
+  }, [order, orderBy, props.accounts])
+
   return (
     <Table size="small" sx={{ '& tbody tr': { cursor: 'pointer' } }}>
       <TableHead>
         <TableRow>
-          <TableCell>Account</TableCell>
+          <TableCell sortDirection={orderBy === 'account' ? order : false}>
+            <TableSortLabel
+              active={orderBy === 'account'}
+              direction={orderBy === 'account' ? order : 'asc'}
+              onClick={() => toggleSort('account')}
+            >
+              Account
+            </TableSortLabel>
+          </TableCell>
           <TableCell>Type</TableCell>
-          <TableCell align="right">Balance</TableCell>
-          <TableCell align="right">Min payment</TableCell>
+          <TableCell align="right" sortDirection={orderBy === 'balance' ? order : false}>
+            <TableSortLabel
+              active={orderBy === 'balance'}
+              direction={orderBy === 'balance' ? order : 'asc'}
+              onClick={() => toggleSort('balance')}
+            >
+              Balance
+            </TableSortLabel>
+          </TableCell>
+          <TableCell align="right" sortDirection={orderBy === 'minPayment' ? order : false}>
+            <TableSortLabel
+              active={orderBy === 'minPayment'}
+              direction={orderBy === 'minPayment' ? order : 'asc'}
+              onClick={() => toggleSort('minPayment')}
+            >
+              Min payment
+            </TableSortLabel>
+          </TableCell>
           <TableCell align="right">Available / Limit</TableCell>
           <TableCell>Payoff</TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
-        {props.accounts.map((a) => {
+        {sorted.map((a) => {
           const payment = a.actualLastMinPayment ?? estimateMinPayment(a.currentBalance || 0)
           const payoff = payoffEstimate({
             balance: a.currentBalance || 0,
