@@ -3,12 +3,14 @@ import AddIcon from '@mui/icons-material/Add'
 import { Link as RouterLink } from 'react-router-dom'
 import { StatCard } from '../components/StatCard'
 import { useAppStore } from '../store/useAppStore'
-import { effectiveMonthlyServiceFee, estimateMinPayment, formatMoney } from '../lib/math'
+import { availableCredit, effectiveMonthlyServiceFee, estimateMinPayment, formatMoney } from '../lib/math'
 
 export function OverviewPage() {
   const { accounts } = useAppStore()
 
   const totalBalance = accounts.reduce((sum, a) => sum + (a.currentBalance || 0), 0)
+  const accountsWithCreditLimit = accounts.filter((a) => a.creditLimit != null)
+  const totalAvailableCredit = accountsWithCreditLimit.reduce((sum, a) => sum + (availableCredit(a) ?? 0), 0)
   const totalMonthlyServiceFees = accounts.reduce((sum, a) => sum + effectiveMonthlyServiceFee(a), 0)
   const totalMinDueEstimate = accounts.reduce((sum, a) => {
     const payment = a.actualLastMinPayment ?? estimateMinPayment(a.currentBalance || 0)
@@ -38,6 +40,13 @@ export function OverviewPage() {
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <StatCard label="Total balance" value={formatMoney(totalBalance)} helper={`${accounts.length} accounts`} />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <StatCard
+            label="Total available credit"
+            value={formatMoney(totalAvailableCredit)}
+            helper={`${accountsWithCreditLimit.length} accounts with credit limits`}
+          />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <StatCard
